@@ -46,18 +46,26 @@ function Runway({ paused }: { paused: boolean }) {
   const [distance, setDistance] = useState(0);
   const [intro, setIntro] = useState<"waiting" | "title" | "photos">("waiting");
   const introStarted = useRef(false);
-  const introFinished = useRef(false);
   const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end end"] });
   const x = useTransform(scrollYProgress, [0, 1], [0, -distance]);
   useEffect(() => {
-    if (paused || introStarted.current) return;
+    if (paused) return;
     let revealTimer: ReturnType<typeof setTimeout>;
     let releaseTimer: ReturnType<typeof setTimeout>;
     let restoreScroll: (() => void) | undefined;
     const begin = () => {
       const element = section.current;
-      if (!element || introStarted.current) return;
+      if (!element) return;
       const bounds = element.getBoundingClientRect();
+      if (bounds.top > 120 && introStarted.current) {
+        clearTimeout(revealTimer);
+        clearTimeout(releaseTimer);
+        restoreScroll?.();
+        restoreScroll = undefined;
+        introStarted.current = false;
+        setIntro("waiting");
+      }
+      if (introStarted.current) return;
       if (bounds.top > 80 || bounds.bottom <= window.innerHeight) return;
       introStarted.current = true;
       window.scrollTo({ top: window.scrollY + bounds.top, behavior: "instant" });
@@ -66,7 +74,7 @@ function Runway({ paused }: { paused: boolean }) {
       restoreScroll = () => { document.documentElement.style.overflow = previousOverflow; };
       setIntro("title");
       // Fade in for 900ms, then hold the completely opaque title for two seconds.
-      revealTimer = setTimeout(() => { introFinished.current = true; setIntro("photos"); }, 2900);
+      revealTimer = setTimeout(() => setIntro("photos"), 2900);
       releaseTimer = setTimeout(() => restoreScroll?.(), 3600);
     };
     window.addEventListener("scroll", begin, { passive: true });
@@ -76,7 +84,7 @@ function Runway({ paused }: { paused: boolean }) {
       clearTimeout(revealTimer);
       clearTimeout(releaseTimer);
       restoreScroll?.();
-      if (!introFinished.current) introStarted.current = false;
+      introStarted.current = false;
     };
   }, [paused]);
   useEffect(() => {

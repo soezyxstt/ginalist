@@ -13,7 +13,8 @@ assert(scenes.includes('image.decode()') && scenes.includes('Promise.all(Array.f
 const runwayComponent = page.slice(page.indexOf("function Runway("), page.indexOf("export default function Home"));
 assert(runwayComponent.includes('useScroll({ target: section, offset: ["start start", "end end"] })'), "Runway must follow vertical page scroll");
 assert(runwayComponent.includes('useTransform(scrollYProgress, [0, 1], [0, -distance])'), "Runway must move horizontally after its intro");
-assert(runwayComponent.includes('setIntro("photos"); }, 2900)'), "Runway title must hold for two seconds after its 900ms fade");
+assert(runwayComponent.includes('setTimeout(() => setIntro("photos"), 2900)'), "Runway title must hold for two seconds after its 900ms fade");
+assert(runwayComponent.includes('bounds.top > 120 && introStarted.current') && runwayComponent.includes('setIntro("waiting")'), "Runway intro must rearm after scrolling back above the section");
 assert(!/photoOpacity|titleOpacity|galleryOpacity/.test(runwayComponent), "Runway intro must complete independently of scroll progress");
 assert(!/onWheel|scrollLeft|<button/.test(runwayComponent), "Runway must not become a controlled carousel");
 assert(/\.runway-sticky\s*\{[^}]*position: sticky/.test(styles), "Runway viewport must stay pinned");

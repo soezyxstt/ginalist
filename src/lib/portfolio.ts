@@ -43,4 +43,6 @@ export const journal: JournalEntry[] = [
   { kind: "youtube", title: "Mulang Ka Alam", id: "6a-DS2j2F74", poster: "mountain-savanna-brown-shearling-coat-5.webp" },
 ];
 
+export const mobileHeroVideo = "/Pesona%20Indonesia%20Mobile.mp4";
+
 export const preloadFiles = [...new Set([...photographs, ...runway, ...motionPhotographs].map(photo => photo.file).concat(journal.map(entry => entry.poster), ["mountain-savanna-brown-shearling-coat-5.webp", "backstage-glamour-silver-gown-bw-2.webp", "studio-minimalist-black-blazer-1.webp", "beauty-jewelry-gold-rings-2.webp", "studio-lookbook-asymmetric-blazer-suit-1.webp"]))];

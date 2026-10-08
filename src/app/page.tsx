@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Camera as Instagram, Pause, Play, X } from "lucide-react";
 import { MotionConfig, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { journal, photographs, runway, type Photograph } from "@/lib/portfolio";
+import { journal, mobileHeroVideo, photographs, runway, type Photograph } from "@/lib/portfolio";
 import { YouTubeBackground } from "@/components/youtube-background";
 import { Accordion, AssetLoader, CounterMotion, GalleryColumns, ImagePassage, SlowPortrait } from "@/components/scroll-scenes";
 
@@ -16,10 +16,11 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
   return <motion.div className={className} initial={{ opacity: 0, y: 65 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.12 }}>{children}</motion.div>;
 }
 
-function CinematicHero({ paused }: { paused: boolean }) {
+function CinematicHero({ paused, mobileVideoUrl }: { paused: boolean; mobileVideoUrl: string | null }) {
   const section = useRef<HTMLElement>(null);
   const [manuallyPaused, setManuallyPaused] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [mobile, setMobile] = useState<boolean | null>(null);
   const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end end"] });
   const clipPath = useTransform(scrollYProgress, [0, 0.55, 1], ["inset(32% 8% 14% 8%)", "inset(0% 0% 0% 0%)", "inset(0% 0% 0% 0%)"]);
   const portraitOpacity = useTransform(scrollYProgress, [0.7, 1], [0, 1]);
@@ -27,15 +28,27 @@ function CinematicHero({ paused }: { paused: boolean }) {
   const titleY = useTransform(scrollYProgress, [0, 0.3], [0, -120]);
   const filmScale = useTransform(scrollYProgress, [0, 1], [1, 1.25]);
 
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const update = () => setMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
   return <section className="hero" id="home" ref={section} aria-labelledby="hero-title">
     <div className="hero-screen">
       <motion.div className="hero-media" style={{ clipPath: paused ? "none" : clipPath }}>
-        <motion.div className="hero-film" style={{ scale: paused ? 1 : filmScale }}><Image src="/assets/mountain-savanna-brown-shearling-coat-5.webp" alt="" fill sizes="100vw" preload /><YouTubeBackground id="6a-DS2j2F74" active={!paused && !manuallyPaused} onPlayingChange={setPlaying} /></motion.div>
+        <motion.div className="hero-film" style={{ scale: paused ? 1 : filmScale }}>
+          <Image src="/assets/mountain-savanna-brown-shearling-coat-5.webp" alt="" fill sizes="100vw" preload />
+          {mobile === false && <YouTubeBackground id="6a-DS2j2F74" active={!paused && !manuallyPaused} onPlayingChange={setPlaying} />}
+          {mobile === true && !paused && <video className="mobile-hero-video" src={mobileVideoUrl ?? mobileHeroVideo} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />}
+        </motion.div>
         <motion.div className="hero-morph-photo" style={{ opacity: paused ? 0 : portraitOpacity }}><Image src="/assets/studio-burgundy-leather-blazer-rope-1.webp" alt="Gina in a burgundy leather blazer" fill sizes="100vw" preload /></motion.div>
         <motion.div className="hero-shade" style={{ opacity: paused ? 1 : titleOpacity }} />
       </motion.div>
       <motion.h1 id="hero-title" className="hero-title" style={{ opacity: paused ? 1 : titleOpacity, y: paused ? 0 : titleY }}><motion.span initial={{ y: "110%" }} animate={{ y: 0 }} transition={{ duration: paused ? 0 : 1.2 }}>Gina <em>Listya.</em></motion.span></motion.h1>
-      <div className="hero-controls"><button onClick={() => setManuallyPaused(playing)} disabled={paused} aria-label={playing ? "Pause hero video" : "Play hero video"}>{playing ? <Pause size={18} /> : <Play size={18} />}</button><a href="#work" aria-label="Scroll to selected work"><ArrowDown size={25} /></a></div>
+      <div className="hero-controls">{mobile === true ? <a href="https://www.instagram.com/reel/Dd_RS2eS60X/" target="_blank" rel="noopener noreferrer" aria-label="View Reel on Instagram"><Instagram size={18} /></a> : <button onClick={() => setManuallyPaused(playing)} disabled={paused} aria-label={playing ? "Pause hero video" : "Play hero video"}>{playing ? <Pause size={18} /> : <Play size={18} />}</button>}<a href="#work" aria-label="Scroll to selected work"><ArrowDown size={25} /></a></div>
     </div>
   </section>;
 }
@@ -108,6 +121,7 @@ function Runway({ paused }: { paused: boolean }) {
 export default function Home() {
   const prefersReduced = useReducedMotion();
   const [ready, setReady] = useState(false);
+  const [mobileVideoUrl, setMobileVideoUrl] = useState<string | null>(null);
   const [motionPaused, setMotionPaused] = useState(false);
   const paused = motionPaused || !!prefersReduced;
   const [filter, setFilter] = useState("All");
@@ -120,6 +134,7 @@ export default function Home() {
   const { scrollYProgress, scrollY } = useScroll();
   const headerBackground = useTransform(scrollY, [0, 180], ["rgba(244, 243, 239, 1)", "rgba(244, 243, 239, 0.98)"]);
   const visible = photographs.filter((photo) => filter === "All" || photo.category === filter);
+  useEffect(() => () => { if (mobileVideoUrl) URL.revokeObjectURL(mobileVideoUrl); }, [mobileVideoUrl]);
   useEffect(() => {
     if (!ready || !window.location.hash) return;
     const frame = requestAnimationFrame(() => document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: "instant" }));
@@ -162,7 +177,7 @@ export default function Home() {
   }
 
   return <MotionConfig reducedMotion={paused ? "always" : "user"} transition={{ duration: paused ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}>
-    {!ready && <AssetLoader onComplete={() => setReady(true)} />}
+    {!ready && <AssetLoader onComplete={(videoUrl) => { setMobileVideoUrl(videoUrl); setReady(true); }} />}
     <div className="site" data-motion={paused ? "paused" : "active"} data-ready={ready} inert={!ready}>
       <a className="skip-link" href="#main">Skip to content</a>
       <motion.header className="site-header" style={{ backgroundColor: headerBackground }} onKeyDown={(event) => { if (event.key === "Escape" && menuOpen) closeMenu(); }}>
@@ -185,7 +200,7 @@ export default function Home() {
       </motion.header>
 
       <main id="main">
-        {ready && <CinematicHero paused={paused} />}
+        {ready && <CinematicHero paused={paused} mobileVideoUrl={mobileVideoUrl} />}
 
         <section className="work section-shell" id="work" aria-labelledby="work-title">
           <Reveal className="section-heading"><h2 id="work-title">Selected <em>work.</em></h2></Reveal>

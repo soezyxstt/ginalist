@@ -3,17 +3,20 @@
 import Image from "next/image";
 import { AnimatePresence, motion, useScroll, useTransform, type MotionValue } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motionPhotographs, preloadFiles, type Photograph } from "@/lib/portfolio";
+import { mobileHeroVideo, motionPhotographs, preloadFiles, type Photograph } from "@/lib/portfolio";
 
-export function AssetLoader({ onComplete }: { onComplete: () => void }) {
+export function AssetLoader({ onComplete }: { onComplete: (videoUrl: string | null) => void }) {
   const [loaded, setLoaded] = useState(0);
   const [failed, setFailed] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const totalAssets = preloadFiles.length + 1;
   useEffect(() => {
     let disposed = false;
     let cursor = 0;
     let completed = 0;
     let failures = 0;
+    const controller = new AbortController();
     const download = async () => {
       while (!disposed && cursor < preloadFiles.length) {
         const file = preloadFiles[cursor++];
@@ -29,18 +32,27 @@ export function AssetLoader({ onComplete }: { onComplete: () => void }) {
         if (!disposed) { setLoaded(++completed); setFailed(failures); }
       }
     };
-    void Promise.all(Array.from({ length: 6 }, download)).then(() => {
+    const downloadVideo = async () => {
+      try {
+        const response = await fetch(mobileHeroVideo, { signal: controller.signal });
+        if (!response.ok) throw new Error(mobileHeroVideo);
+        const blob = await response.blob();
+        if (!disposed) setVideoUrl(URL.createObjectURL(blob));
+      } catch { failures++; }
+      if (!disposed) { setLoaded(++completed); setFailed(failures); }
+    };
+    void Promise.all([...Array.from({ length: 6 }, download), downloadVideo()]).then(() => {
       if (!disposed && failures === 0) setFinished(true);
     });
-    return () => { disposed = true; };
+    return () => { disposed = true; controller.abort(); };
   }, []);
-  const progress = loaded / preloadFiles.length;
-  return <motion.div className="asset-loader" role="status" aria-live="polite" animate={finished ? { y: "-100%" } : { y: 0 }} transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }} onAnimationComplete={() => { if (finished) onComplete(); }}>
+  const progress = loaded / totalAssets;
+  return <motion.div className="asset-loader" role="status" aria-live="polite" animate={finished ? { y: "-100%" } : { y: 0 }} transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }} onAnimationComplete={() => { if (finished) onComplete(videoUrl); }}>
     <div className="loader-wordmark">ginalist.</div>
     <div className="loader-images" aria-hidden="true">{["studio-minimalist-black-blazer-1.webp", "beauty-jewelry-gold-rings-2.webp", "backstage-glamour-silver-gown-bw-2.webp"].map((file, index) => <motion.div key={file} initial={{ y: 100, rotate: index * 6 - 6 }} animate={{ y: 0, rotate: index * 6 - 6 }} transition={{ delay: index * .12, duration: .8 }}><Image src={`/assets/${file}`} alt="" fill sizes="25vw" /></motion.div>)}</div>
-    <div className="loader-bottom"><span>{loaded === preloadFiles.length ? "Ready to enter" : "Collecting the frames"}</span><span className="loader-count">{Math.floor(progress * 100).toString().padStart(2, "0")}<small>%</small></span></div>
+    <div className="loader-bottom"><span>{loaded === totalAssets ? "Ready to enter" : "Collecting the frames"}</span><span className="loader-count">{Math.floor(progress * 100).toString().padStart(2, "0")}<small>%</small></span></div>
     <motion.div className="loader-progress" style={{ scaleX: progress }} />
-    {failed > 0 && loaded === preloadFiles.length && <div className="loader-error">{failed} photos could not load. <button onClick={() => window.location.reload()}>Retry</button><button onClick={() => setFinished(true)}>Continue with available photos</button></div>}
+    {failed > 0 && loaded === totalAssets && <div className="loader-error">{failed} assets could not load. <button onClick={() => window.location.reload()}>Retry</button><button onClick={() => setFinished(true)}>Continue with available assets</button></div>}
   </motion.div>;
 }
 

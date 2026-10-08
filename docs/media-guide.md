@@ -1,8 +1,8 @@
 # Updating Gina’s portfolio
 
-Selected work and runway photographs are listed in `src/lib/portfolio.ts`. Use filenames from `public/catalog.md`; all photographs and local videos belong in `public/assets/`.
+Selected work and runway photographs are listed in `src/lib/portfolio.ts`. Use filenames from `public/catalog.md`; gallery photographs and journal videos belong in `public/assets/`.
 
-The supplied YouTube video `6a-DS2j2F74` plays muted in the hero and is available with controls in the journal. Add confirmed media to the `journal` array:
+The supplied YouTube video `6a-DS2j2F74` plays muted in the desktop hero and is available with controls in the journal. Mobile plays the vertical MP4 copy of Instagram Reel `Dd_RS2eS60X` from `public/Pesona Indonesia Mobile.mp4`, with a link to the Reel. Add confirmed media to the `journal` array:
 
 ```ts
 // Local film (poster and MP4 in public/assets)

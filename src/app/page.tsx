@@ -8,7 +8,7 @@ import { journal, photographs, runway, type Photograph } from "@/lib/portfolio";
 import { YouTubeBackground } from "@/components/youtube-background";
 import { Accordion, AssetLoader, CounterMotion, GalleryColumns, ImagePassage, SlowPortrait } from "@/components/scroll-scenes";
 
-const instagram = "https://www.instagram.com/ginalist.y/";
+const instagram = "https://www.instagram.com/gnalist.y/";
 const whatsapp = "https://wa.me/6281461171726";
 const navigation = [["Selected work", "#work"], ["Runway", "#runway"], ["About", "#about"], ["Journal", "#journal"]];
 
@@ -44,13 +44,41 @@ function Runway({ paused }: { paused: boolean }) {
   const section = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [distance, setDistance] = useState(0);
+  const [intro, setIntro] = useState<"waiting" | "title" | "photos">("waiting");
+  const introStarted = useRef(false);
+  const introFinished = useRef(false);
   const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end end"] });
-  const x = useTransform(scrollYProgress, [0.32, 1], [0, -distance]);
-  const photoScale = useTransform(scrollYProgress, [0, 0.17, 0.3], [0.55, 1.15, 1.35]);
-  const photoOpacity = useTransform(scrollYProgress, [0, 0.15, 0.26], [1, 1, 0]);
-  const titleOpacity = useTransform(scrollYProgress, [0.12, 0.2, 0.27, 0.34], [0, 1, 1, 0]);
-  const titleScale = useTransform(scrollYProgress, [0.12, 0.34], [0.8, 1.15]);
-  const galleryOpacity = useTransform(scrollYProgress, [0.29, 0.36], [0, 1]);
+  const x = useTransform(scrollYProgress, [0, 1], [0, -distance]);
+  useEffect(() => {
+    if (paused || introStarted.current) return;
+    let revealTimer: ReturnType<typeof setTimeout>;
+    let releaseTimer: ReturnType<typeof setTimeout>;
+    let restoreScroll: (() => void) | undefined;
+    const begin = () => {
+      const element = section.current;
+      if (!element || introStarted.current) return;
+      const bounds = element.getBoundingClientRect();
+      if (bounds.top > 80 || bounds.bottom <= window.innerHeight) return;
+      introStarted.current = true;
+      window.scrollTo({ top: window.scrollY + bounds.top, behavior: "instant" });
+      const previousOverflow = document.documentElement.style.overflow;
+      document.documentElement.style.overflow = "hidden";
+      restoreScroll = () => { document.documentElement.style.overflow = previousOverflow; };
+      setIntro("title");
+      // Fade in for 900ms, then hold the completely opaque title for two seconds.
+      revealTimer = setTimeout(() => { introFinished.current = true; setIntro("photos"); }, 2900);
+      releaseTimer = setTimeout(() => restoreScroll?.(), 3600);
+    };
+    window.addEventListener("scroll", begin, { passive: true });
+    begin();
+    return () => {
+      window.removeEventListener("scroll", begin);
+      clearTimeout(revealTimer);
+      clearTimeout(releaseTimer);
+      restoreScroll?.();
+      if (!introFinished.current) introStarted.current = false;
+    };
+  }, [paused]);
   useEffect(() => {
     const element = track.current;
     if (!element) return;
@@ -60,11 +88,11 @@ function Runway({ paused }: { paused: boolean }) {
     measure();
     return () => observer.disconnect();
   }, []);
-  return <section className="runway" id="runway" ref={section} aria-labelledby="runway-title">
+  return <section className="runway" id="runway" ref={section} aria-labelledby="runway-title" data-intro={paused ? "photos" : intro}>
     <div className="runway-sticky section-shell">
-      {!paused && <motion.div className="runway-zoom" style={{ scale: photoScale, opacity: photoOpacity }}><Image src="/assets/runway-quilted-black-widebrim-2.webp" alt="Gina in a sculpted black runway look" fill sizes="100vw" /></motion.div>}
-      <motion.h2 id="runway-title" className="runway-intro" style={{ opacity: paused ? 1 : titleOpacity, scale: paused ? 1 : titleScale }}><em>Runway.</em></motion.h2>
-      <motion.div className="runway-track" ref={track} style={{ x: paused ? 0 : x, opacity: paused ? 1 : galleryOpacity }}>{runway.map((photo, index) => <motion.figure className="runway-frame" key={photo.file} initial={{ opacity: .15, y: index % 2 ? -90 : 90 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: .4 }} transition={{ duration: .8 }}><div className="runway-photo"><Image src={`/assets/${photo.file}`} alt={photo.alt} fill sizes="(max-width: 700px) 78vw, 35vw" /></div><figcaption>{photo.title}</figcaption></motion.figure>)}</motion.div>
+      {!paused && <motion.div className="runway-zoom" initial={false} animate={{ scale: intro === "waiting" ? .55 : 1.2, opacity: intro === "waiting" ? 1 : 0 }} transition={{ duration: .9 }}><Image src="/assets/runway-quilted-black-widebrim-2.webp" alt="Gina in a sculpted black runway look" fill sizes="100vw" /></motion.div>}
+      <motion.h2 id="runway-title" className="runway-intro" initial={false} animate={{ opacity: paused || intro === "title" ? 1 : 0 }} transition={{ duration: intro === "title" ? .9 : .7 }}><em>Runway.</em></motion.h2>
+      <motion.div className="runway-track" ref={track} style={{ x: paused || intro !== "photos" ? 0 : x }} initial={false} animate={{ opacity: paused || intro === "photos" ? 1 : 0 }} transition={{ duration: .7 }}>{runway.map((photo, index) => <motion.figure className="runway-frame" key={photo.file} initial={{ opacity: .15, y: index % 2 ? -90 : 90 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: .4 }} transition={{ duration: .8 }}><div className="runway-photo"><Image src={`/assets/${photo.file}`} alt={photo.alt} fill sizes="(max-width: 700px) 78vw, 35vw" /></div><figcaption>{photo.title}</figcaption></motion.figure>)}</motion.div>
     </div>
   </section>;
 }
@@ -141,7 +169,7 @@ export default function Home() {
             <div className="navigation-panel" id="mobile-navigation">
               <nav aria-label="Mobile navigation">{navigation.map(([label, href], index) => <a key={href} href={href} onClick={(event) => { event.preventDefault(); menuDestination.current = href; closeMenu(); }}><span>0{index + 1}</span>{label}<ArrowUpRight /></a>)}</nav>
               <a className="text-link" href={whatsapp} target="_blank" rel="noopener noreferrer">Contact on WhatsApp <ArrowUpRight size={18} /></a>
-              <a className="menu-instagram" href={instagram} target="_blank" rel="noopener noreferrer">Instagram / @ginalist.y</a>
+              <a className="menu-instagram" href={instagram} target="_blank" rel="noopener noreferrer">Instagram / @gnalist.y</a>
             </div>
           </div>
         </div>
@@ -167,11 +195,11 @@ export default function Home() {
         </section>
 
         <section className="journal section-shell" id="journal" aria-labelledby="journal-title">
-          <Reveal className="section-heading"><h2 id="journal-title">In <em>motion.</em></h2><a className="text-link" href={instagram} target="_blank" rel="noopener noreferrer">@ginalist.y <ArrowUpRight size={18} /></a></Reveal>
+          <Reveal className="section-heading"><h2 id="journal-title">In <em>motion.</em></h2><a className="text-link" href={instagram} target="_blank" rel="noopener noreferrer">@gnalist.y <ArrowUpRight size={18} /></a></Reveal>
           {journal.length > 0 ? <div className="journal-grid">{journal.map((entry) => <motion.article key={entry.title} className="journal-entry" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>{entry.kind === "video" ? <video controls playsInline preload="none" poster={`/assets/${entry.poster}`}><source src={`/assets/${entry.file}`} /></video> : entry.kind === "youtube" && activeVideo === entry.id ? <iframe src={`https://www.youtube-nocookie.com/embed/${entry.id}?autoplay=1`} title={entry.title} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen /> : entry.kind === "youtube" ? <button className="journal-preview" onClick={() => setActiveVideo(entry.id)} aria-label={`Play ${entry.title}`}><Image src={`/assets/${entry.poster}`} alt="" fill sizes="(max-width: 700px) 90vw, 45vw" /><span><Play /> Watch film</span></button> : <a className="journal-preview" href={`https://www.instagram.com/p/${entry.id}/`} target="_blank" rel="noopener noreferrer"><Image src={`/assets/${entry.poster}`} alt={entry.title} fill sizes="(max-width: 700px) 90vw, 45vw" /><span><Instagram /> View on Instagram <ArrowUpRight /></span></a>}</motion.article>)}</div> : <a className="text-link" href={instagram} target="_blank" rel="noopener noreferrer">Instagram <ArrowUpRight size={18} /></a>}
         </section>
 
-        <footer className="contact section-shell" id="contact"><Reveal><a className="contact-title" href={whatsapp} target="_blank" rel="noopener noreferrer">Let’s <em>work.</em><ArrowUpRight aria-hidden="true" /></a><div className="contact-links"><a className="text-link" href={whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp / +62 814-6117-1726 <ArrowUpRight size={18} /></a><a className="text-link" href={instagram} target="_blank" rel="noopener noreferrer">Instagram / @ginalist.y <ArrowUpRight size={18} /></a></div></Reveal><div className="footer-bottom"><span>© {new Date().getFullYear()} Gina Listya Nuraini</span><span>Garut, West Java · Indonesia</span><button onClick={() => setMotionPaused(!motionPaused)} aria-pressed={motionPaused} disabled={!!prefersReduced}>{paused ? <Play size={13} /> : <Pause size={13} />}{prefersReduced ? "Reduced motion" : motionPaused ? "Resume motion" : "Pause motion"}</button><a href="#home">Back to top ↑</a></div></footer>
+        <footer className="contact section-shell" id="contact"><Reveal><a className="contact-title" href={whatsapp} target="_blank" rel="noopener noreferrer">Let’s <em>work.</em><ArrowUpRight aria-hidden="true" /></a><div className="contact-links"><a className="text-link" href={whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp / +62 814-6117-1726 <ArrowUpRight size={18} /></a><a className="text-link" href={instagram} target="_blank" rel="noopener noreferrer">Instagram / @gnalist.y <ArrowUpRight size={18} /></a></div></Reveal><div className="footer-bottom"><span>© {new Date().getFullYear()} Gina Listya Nuraini</span><span>Garut, West Java · Indonesia</span><button onClick={() => setMotionPaused(!motionPaused)} aria-pressed={motionPaused} disabled={!!prefersReduced}>{paused ? <Play size={13} /> : <Pause size={13} />}{prefersReduced ? "Reduced motion" : motionPaused ? "Resume motion" : "Pause motion"}</button><a href="#home">Back to top ↑</a></div></footer>
       </main>
 
       <dialog ref={lightbox} className="lightbox" aria-label={selected ? selected.title : "Photograph viewer"} onKeyDown={(event) => { if (event.key === "ArrowRight") nextPhoto(1); if (event.key === "ArrowLeft") nextPhoto(-1); }} onClose={() => setSelected(null)}><button className="icon-button lightbox-close" aria-label="Close photograph" onClick={() => lightbox.current?.close()}><X /></button>{selected && <><div className="lightbox-photo"><Image src={`/assets/${selected.file}`} alt={selected.alt} fill sizes="100vw" /></div><div className="lightbox-bottom"><button className="icon-button" aria-label="Previous photograph" onClick={() => nextPhoto(-1)}><ArrowLeft /></button><p>{selected.title}<span>{selected.category}</span></p><button className="icon-button" aria-label="Next photograph" onClick={() => nextPhoto(1)}><ArrowRight /></button></div></>}</dialog>

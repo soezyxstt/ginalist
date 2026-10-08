@@ -21,8 +21,8 @@ The runway pins to the viewport while vertical page scrolling moves its photogra
 
 The gallery uses 50 distinct looks selected from the 95-photo catalog. `preloadFiles` contains every image used by the gallery, hero, loader, and scroll scenes. The loader downloads and decodes those images in six parallel lanes before revealing the page; failures offer retry or entry with the available photos. Next image optimization is disabled so preloading and display share the same cached WebP files.
 
-Gallery columns move at different speeds. A sticky backstage background is revealed through transparent foreground space; the next photo wall moves its middle column in the opposite direction. The runway opens with a scroll-driven zoom and title before its horizontal sequence. About uses a sticky portrait and animated accordion panels.
+Gallery columns move at different speeds. A sticky backstage background is revealed through transparent foreground space; the next photo wall moves its middle column in the opposite direction. The runway opens with an automatic 900ms image-to-solid-title fade, holds the opaque title for two seconds, then reveals its scroll-driven horizontal sequence. About uses a sticky portrait and animated accordion panels.
 
-Bookings link directly to WhatsApp +62 814-6117-1726. Instagram links point to @ginalist.y. Biography, collaborations, and achievements come from `public/Ginalist.pdf`.
+Bookings link directly to WhatsApp +62 814-6117-1726. Instagram links point to @gnalist.y. Biography, collaborations, and achievements come from `public/Ginalist.pdf`.
 
 Run `node scripts/check-portfolio.mjs` with the local server running to verify asset files, profile identity, and public contact links. The optional first argument is the preview origin.

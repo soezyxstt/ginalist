@@ -240,6 +240,8 @@ body:has(.asset-loader) { overflow: hidden; }
 .runway-zoom img { object-position: center 30%; }
 .runway-sticky .runway-intro { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font-size: clamp(80px, 22vw, 380px); margin: 0; pointer-events: none; }
 .runway-track { position: relative; z-index: 1; gap: 7vw; }
+.runway-intro { background: var(--ink); }
+.site[data-motion="paused"] .runway-intro { background: transparent; }
 .runway-frame { flex-basis: 38vw; padding-top: 6vh; }
 .runway-frame:nth-child(even) { padding-top: 0; padding-bottom: 6vh; }
 .about { position: relative; padding-block: 15vh; align-items: start; min-height: 140svh; }

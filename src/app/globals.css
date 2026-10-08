@@ -59,6 +59,7 @@ body:has(dialog[open]) { overflow: hidden; }
 .hero-title > span { display: block; }
 .hero-controls { position: absolute; z-index: 3; bottom: 3%; left: 4%; right: 4%; display: flex; justify-content: space-between; color: var(--ink); }
 .hero-controls button, .hero-controls a { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid currentColor; border-radius: 50%; background: transparent; }
+.mobile-hero-actions { display: flex; gap: 10px; }
 .photo { position: relative; overflow: hidden; background: var(--stone); }
 .photo-inner { position: absolute; inset: -16% 0; }
 .work { padding-block: 90px 110px; }

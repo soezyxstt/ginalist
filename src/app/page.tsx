@@ -18,7 +18,9 @@ function Reveal({ children, className = "" }: { children: ReactNode; className?:
 
 function CinematicHero({ paused, mobileVideoUrl }: { paused: boolean; mobileVideoUrl: string | null }) {
   const section = useRef<HTMLElement>(null);
+  const mobileVideo = useRef<HTMLVideoElement>(null);
   const [manuallyPaused, setManuallyPaused] = useState(false);
+  const [mobileVideoBlocked, setMobileVideoBlocked] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [mobile, setMobile] = useState<boolean | null>(null);
   const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end end"] });
@@ -36,19 +38,29 @@ function CinematicHero({ paused, mobileVideoUrl }: { paused: boolean; mobileVide
     return () => media.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => {
+    if (mobile !== true || paused || !mobileVideo.current) return;
+    void mobileVideo.current.play().then(() => setMobileVideoBlocked(false)).catch(() => setMobileVideoBlocked(true));
+  }, [mobile, mobileVideoUrl, paused]);
+
+  function retryMobileVideo() {
+    if (!mobileVideo.current) return;
+    void mobileVideo.current.play().then(() => setMobileVideoBlocked(false)).catch(() => setMobileVideoBlocked(true));
+  }
+
   return <section className="hero" id="home" ref={section} aria-labelledby="hero-title">
     <div className="hero-screen">
       <motion.div className="hero-media" style={{ clipPath: paused ? "none" : clipPath }}>
         <motion.div className="hero-film" style={{ scale: paused ? 1 : filmScale }}>
           <Image src="/assets/mountain-savanna-brown-shearling-coat-5.webp" alt="" fill sizes="100vw" preload />
           {mobile === false && <YouTubeBackground id="6a-DS2j2F74" active={!paused && !manuallyPaused} onPlayingChange={setPlaying} />}
-          {mobile === true && !paused && <video className="mobile-hero-video" src={mobileVideoUrl ?? mobileHeroVideo} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />}
+          {mobile === true && !paused && <video ref={mobileVideo} className="mobile-hero-video" src={mobileVideoUrl ?? mobileHeroVideo} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" onPlaying={() => setMobileVideoBlocked(false)} />}
         </motion.div>
         <motion.div className="hero-morph-photo" style={{ opacity: paused ? 0 : portraitOpacity }}><Image src="/assets/studio-burgundy-leather-blazer-rope-1.webp" alt="Gina in a burgundy leather blazer" fill sizes="100vw" preload /></motion.div>
         <motion.div className="hero-shade" style={{ opacity: paused ? 1 : titleOpacity }} />
       </motion.div>
       <motion.h1 id="hero-title" className="hero-title" style={{ opacity: paused ? 1 : titleOpacity, y: paused ? 0 : titleY }}><motion.span initial={{ y: "110%" }} animate={{ y: 0 }} transition={{ duration: paused ? 0 : 1.2 }}>Gina <em>Listya.</em></motion.span></motion.h1>
-      <div className="hero-controls">{mobile === true ? <a href="https://www.instagram.com/reel/Dd_RS2eS60X/" target="_blank" rel="noopener noreferrer" aria-label="View Reel on Instagram"><Instagram size={18} /></a> : <button onClick={() => setManuallyPaused(playing)} disabled={paused} aria-label={playing ? "Pause hero video" : "Play hero video"}>{playing ? <Pause size={18} /> : <Play size={18} />}</button>}<a href="#work" aria-label="Scroll to selected work"><ArrowDown size={25} /></a></div>
+      <div className="hero-controls">{mobile === true ? <div className="mobile-hero-actions">{mobileVideoBlocked && <button onClick={retryMobileVideo} aria-label="Play hero video"><Play size={18} /></button>}<a href="https://www.instagram.com/reel/Dd_RS2eS60X/" target="_blank" rel="noopener noreferrer" aria-label="View Reel on Instagram"><Instagram size={18} /></a></div> : <button onClick={() => setManuallyPaused(playing)} disabled={paused} aria-label={playing ? "Pause hero video" : "Play hero video"}>{playing ? <Pause size={18} /> : <Play size={18} />}</button>}<a href="#work" aria-label="Scroll to selected work"><ArrowDown size={25} /></a></div>
     </div>
   </section>;
 }
